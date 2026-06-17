@@ -1,5 +1,0 @@
-{
-  "installCommand": "cd clinicflow && npm install",
-  "buildCommand": "cd clinicflow && npm run build",
-  "outputDirectory": "clinicflow/.next"
-}
