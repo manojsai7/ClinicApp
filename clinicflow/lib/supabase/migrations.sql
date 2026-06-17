@@ -1,5 +1,52 @@
 -- Create custom types if needed
 CREATE TYPE user_role AS ENUM ('admin', 'doctor', 'receptionist');
+
+-- PROFILES TABLE (links Supabase auth.users to clinic roles)
+-- Automatically created when a user signs up via Google OAuth or Phone OTP
+CREATE TABLE IF NOT EXISTS profiles (
+  id UUID REFERENCES auth.users(id) ON DELETE CASCADE PRIMARY KEY,
+  name TEXT,
+  email TEXT,
+  phone VARCHAR,
+  role TEXT NOT NULL DEFAULT 'receptionist' CHECK (role IN ('admin', 'doctor', 'receptionist')),
+  avatar_url TEXT,
+  is_active BOOLEAN DEFAULT TRUE NOT NULL,
+  created_at TIMESTAMP WITH TIME ZONE DEFAULT timezone('utc'::text, now()) NOT NULL
+);
+
+-- Enable Row Level Security on profiles
+ALTER TABLE profiles ENABLE ROW LEVEL SECURITY;
+
+-- Policy: Users can read their own profile
+CREATE POLICY "profiles_select_own" ON profiles
+  FOR SELECT USING (auth.uid() = id);
+
+-- Policy: Users can update their own profile
+CREATE POLICY "profiles_update_own" ON profiles
+  FOR UPDATE USING (auth.uid() = id);
+
+-- Auto-create profile on new auth user signup
+CREATE OR REPLACE FUNCTION handle_new_user()
+RETURNS trigger AS $$
+BEGIN
+  INSERT INTO profiles (id, name, email, avatar_url, role)
+  VALUES (
+    NEW.id,
+    COALESCE(NEW.raw_user_meta_data->>'full_name', NEW.raw_user_meta_data->>'name', 'New User'),
+    NEW.email,
+    NEW.raw_user_meta_data->>'avatar_url',
+    'receptionist'  -- Default role; admin can change this later
+  )
+  ON CONFLICT (id) DO NOTHING;
+  RETURN NEW;
+END;
+$$ LANGUAGE plpgsql SECURITY DEFINER;
+
+-- Trigger on auth.users insert
+DROP TRIGGER IF EXISTS on_auth_user_created ON auth.users;
+CREATE TRIGGER on_auth_user_created
+  AFTER INSERT ON auth.users
+  FOR EACH ROW EXECUTE PROCEDURE handle_new_user();
 CREATE TYPE gender_type AS ENUM ('male', 'female', 'other');
 CREATE TYPE visit_type AS ENUM ('consultation', 'follow-up', 'blood-report', 'procedure');
 CREATE TYPE medical_file_type AS ENUM ('prescription', 'previous_record', 'external_report');

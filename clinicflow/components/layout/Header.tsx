@@ -13,58 +13,64 @@ export default function Header() {
 
   useEffect(() => {
     const val = localStorage.getItem("cf_session");
-    if (val) {
-      setSession(JSON.parse(val));
-    }
+    if (val) setSession(JSON.parse(val));
   }, []);
 
   useEffect(() => {
-    // Dynamic pending notifications count
-    const notes = getStoredNotifications();
-    setPendingCount(notes.filter((n) => n.status === "pending").length);
-    
-    const interval = setInterval(() => {
-      const latest = getStoredNotifications();
-      setPendingCount(latest.filter((n) => n.status === "pending").length);
-    }, 1500);
-
+    const update = () => {
+      const notes = getStoredNotifications();
+      setPendingCount(notes.filter((n) => n.status === "pending").length);
+    };
+    update();
+    const interval = setInterval(update, 2000);
     return () => clearInterval(interval);
   }, []);
 
+  // Cmd+K / Ctrl+K to open spotlight
+  useEffect(() => {
+    function onKeyDown(e: KeyboardEvent) {
+      if ((e.metaKey || e.ctrlKey) && e.key === "k") {
+        e.preventDefault();
+        setIsSpotlightOpen(true);
+      }
+    }
+    window.addEventListener("keydown", onKeyDown);
+    return () => window.removeEventListener("keydown", onKeyDown);
+  }, []);
+
   const initials = session?.name
-    ? session.name
-        .split(" ")
-        .map((n) => n[0])
-        .join("")
-        .slice(0, 2)
-        .toUpperCase()
+    ? session.name.split(" ").map((n) => n[0]).join("").slice(0, 2).toUpperCase()
     : "DR";
 
   return (
     <>
-      <header className="sticky top-0 z-30 flex items-center gap-4 h-16 px-6 bg-white/90 backdrop-blur border-b border-[#E6EFEA] font-sans">
-        {/* Spotlight Trigger Search Bar */}
-        <div 
+      <header className="sticky top-0 z-30 flex items-center gap-3 h-[60px] px-4 sm:px-6 bg-white/90 backdrop-blur-xl border-b border-zinc-200/60">
+        {/* Search — always full-width on left */}
+        <button
           onClick={() => setIsSpotlightOpen(true)}
-          className="flex-1 max-w-md cursor-pointer"
+          className="flex-1 max-w-xl flex items-center gap-3 h-9 rounded-xl border border-zinc-200 bg-zinc-50 px-3.5 hover:border-zinc-300 hover:bg-white transition-all duration-150 cursor-pointer text-left"
         >
-          <div className="flex items-center gap-3 h-10 rounded-full border border-[#E6EFEA] bg-[#F8FAF9] px-4 hover:border-[#10B981] hover:bg-white transition-all duration-150">
-            <Search size={15} className="text-gray-400 flex-shrink-0" />
-            <span className="flex-1 text-sm text-gray-400 select-none">
-              Search file number, name, phone...
-            </span>
-            <kbd className="h-5 px-1.5 rounded bg-gray-100 border border-gray-200 text-[10px] text-gray-400 font-mono flex items-center justify-center select-none shadow-sm shrink-0">
-              ⌘K
+          <Search size={14} className="text-zinc-400 flex-shrink-0" />
+          <span className="flex-1 text-[13px] text-zinc-400 select-none">
+            Search patients, files, visits...
+          </span>
+          <div className="hidden sm:flex items-center gap-1">
+            <kbd className="h-5 min-w-[20px] px-1.5 rounded-md bg-zinc-100 border border-zinc-200 text-[10px] text-zinc-400 font-mono flex items-center justify-center">
+              ⌘
+            </kbd>
+            <kbd className="h-5 min-w-[20px] px-1.5 rounded-md bg-zinc-100 border border-zinc-200 text-[10px] text-zinc-400 font-mono flex items-center justify-center">
+              K
             </kbd>
           </div>
-        </div>
+        </button>
 
+        {/* Spacer */}
         <div className="flex-1" />
 
-        {/* Notification bell */}
+        {/* Notifications */}
         <Link
           href="/notifications"
-          className="relative w-9 h-9 rounded-xl border border-[#E6EFEA] flex items-center justify-center text-gray-500 hover:text-gray-900 hover:bg-[#F4F7F5]/60 transition-all duration-150"
+          className="relative w-9 h-9 rounded-xl border border-zinc-200 flex items-center justify-center text-zinc-500 hover:text-zinc-900 hover:bg-zinc-50 hover:border-zinc-300 transition-all duration-150 shrink-0"
         >
           <Bell size={16} />
           {pendingCount > 0 && (
@@ -75,15 +81,15 @@ export default function Header() {
         </Link>
 
         {/* Avatar */}
-        <div className="w-9 h-9 rounded-full bg-gradient-to-br from-emerald-400 to-teal-600 flex items-center justify-center text-white text-sm font-bold shadow-sm cursor-pointer shrink-0">
+        <div className="w-9 h-9 rounded-full bg-gradient-to-br from-indigo-400 to-purple-500 flex items-center justify-center text-white text-[13px] font-bold shadow-sm cursor-pointer shrink-0">
           {initials}
         </div>
       </header>
 
-      {/* Spotlight Command Modal */}
-      <SpotlightSearch 
-        isOpen={isSpotlightOpen} 
-        onClose={() => setIsSpotlightOpen(false)} 
+      {/* Spotlight modal */}
+      <SpotlightSearch
+        isOpen={isSpotlightOpen}
+        onClose={() => setIsSpotlightOpen(false)}
       />
     </>
   );

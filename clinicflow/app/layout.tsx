@@ -9,16 +9,28 @@ const geistSans = localFont({
 });
 
 export const metadata: Metadata = {
-  title: "ClinicFlow — Digital Medical Records Platform",
+  title: "ClinicFlow — Digital OS for Modern Homeopathy Clinics",
   description:
-    "ClinicFlow is a modern digital patient management platform for small and medium clinics. Replace paper files with a beautiful, searchable, timeline-based system.",
+    "Never lose a patient's history again. ClinicFlow is a beautiful digital records system for homeopathy clinics — patient timelines, prescriptions, OP renewals, and more.",
+  keywords: "homeopathy clinic, patient management, digital records, OP renewal, clinic software",
+  openGraph: {
+    title: "ClinicFlow — Digital OS for Modern Homeopathy Clinics",
+    description: "Beautiful digital records for homeopathy clinics.",
+    type: "website",
+  },
+};
+
+export const viewport = {
+  width: "device-width",
+  initialScale: 1,
+  maximumScale: 1,
 };
 
 export default function RootLayout({
   children,
 }: Readonly<{ children: React.ReactNode }>) {
   return (
-    <html lang="en">
+    <html lang="en" suppressHydrationWarning>
       <body className={`${geistSans.variable} antialiased font-sans`}>
         {children}
       </body>
